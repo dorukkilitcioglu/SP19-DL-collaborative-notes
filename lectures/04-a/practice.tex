@@ -1,0 +1,29 @@
+\chapter{Visualizing 2D interpolation}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+
+As with the previous parts, we have three curves defined by functions:
+\[X_c(t) = t
+\begin{pmatrix}
+    \sin( \frac{2 \pi}{C}(2t + c -1)) \\
+    \cos( \frac{2 \pi}{C}(2t + c -1))
+\end{pmatrix}
+ \]
+\[ 0 \leq t \leq 1 \quad c = 1,..., C\]
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=200pt]{labs/02/images/spiral1.png}
+    \caption{3 not linearly separable parametric curves}
+    \label{fig:spiral2}
+\end{figure}
+
+We use a 3 layer net to visualize it. The input is 2D, the first hidden layer brings it up to 100D, after which there is a ReLU non-linearity.
+Compared to last time, we have a wider layer, which allows for more opportunities in representing the data.
+We then go back down to 2D again, which is useful for visualization, and then we can bring it back up to 3D for the final classification.
+Since there isn't any non-linearity, the last two layers are equivalent to having a single layer that goes from the ReLU to the classification layer.
+
+In order to visualize each transformation, we do a linear interpolation from the input to the output at the 2D hidden layer using
+
+\[(1-\alpha)x^{(i)} + \alpha \phi(x^{(i)}), 0\le \alpha \le 1
+ \]

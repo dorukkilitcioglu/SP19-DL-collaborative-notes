@@ -1,0 +1,111 @@
+\chapter{Convolutional Neural Nets Continued}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+
+\section{Striding}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+Striding is a way of subsampling the input to a convolution or a pooling layer such that consecutive operations skip $S-1$ elements between their calculation.
+With $S=1$ as default, there will be an output for all inputs, except for the edges.
+With $S=2$, there will only be an output for every other input node.
+The generalized equation for the resulting number of nodes is
+\begin{equation}
+    M = \frac{N - K + 1}{2}
+\end{equation}
+
+\section{A trou (with holes)}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+A trou is a similar idea to striding, but without the same cost of the resolution decrease.
+Instead of skipping between the kernels, a trou skips inside the kernels.
+For example, with a trou of 2, one kernel would get input from every other node.
+This widens the receptive field of a kernel without subsampling.
+The generalized equation for the resulting number of nodes is
+\begin{equation}
+    M = N - (K-1)S + 1
+\end{equation}
+where $S-1$ is the number of holes each kernel leaves while calculating the convolution.
+Since the resolution depends on the ratio of output nodes to the input nodes, a trou loses less resolution when compared to striding.
+
+\section{Object detection}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+Let's say that we have an object detector that detects objects in an image of 6 pixels.
+These 6 pixels are operated on by 4 3x3 kernels to give 4 features.
+These four features are operated on by 2 3x3 kernels to give 2 higher level features.
+The final layer uses these two features to perform binary classification.
+
+In a larger image, we can slide this object detector over the image to get a probability value of there being our desired object over those pixels.
+However, if we use a sliding window approach, we do a lot of extra computations, because our object detector will re-compute some parts (a whole child branch leading to the output) that were already handled.
+
+Instead, we can first apply the first layer of convolutions over the entire image.
+From there, we can apply the second batch of convolutions on top, and finally top it off by doing the binary classifications.
+
+If we want to emulate a fully connected layer in our object detector, we can use $1\times1$ convolutions.
+
+\section{Uses of object detection}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+
+\subsection{Word-level training with weak supervision}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+This model introduced the idea of using different window widths to recognize objects (numbers) of different sizes.
+Using a sliding window this model can get the probability of a digit occurring over every slice of pixels.
+
+\begin{center}
+	\includegraphics[width=0.5\linewidth]{lectures/04-a/images/word-level.png}
+\end{center}
+
+When going over a digit, there may be multiple slices of the image where the model gives a high probability of that digit.
+In order not to repeat the same digit twice, this model uses a Probabilistic Finite State Machine that combines these probabilities, combining regions with high probabilities into one.
+This FSM can be solved using the Viterbi algorithm.
+
+\subsection{Face Detection}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+At the time, the largest dataset used for face detection was in around 1000s of examples, instead of the many millions neural networks usually require.
+These images were of size $20\times20$, and the neural net used to detect faces was also quite small: there were only two convolutional layers, and a binary output.
+
+The accuracy of this model was also not good, because there were a lot of false positives with images that looked like faces.
+In order to increase the accuracy, researchers needed a way of finding negative samples.
+The solution was to take a set of images that you knew didn't contain faces and create tons of $20\times20$ patches from those images.
+If any of those images gave a false positive, you would add that patch into the set of negative samples.
+
+It should be noted that using white noise as negative sample is not an effective way of training, as the set of all real-life images is only a very small portion of the set of all possible pixel combinations.
+
+This research was unfortunately largely ignored by the computer vision community.
+
+During mid 2000s, research groups realized that detecting if there is a face and the orientation of the face at the same time led to better results compared to doing both tasks separately.
+This is called multi-task learning, and it forces the neural net to learn the commonality in between the two tasks.
+This acts as a form of regularization, leading to more generalized features for an image.
+
+One other important outcome of this research was the use of non-maximal suppression.
+In non-maximal suppression, the same image is first subsampled multiple times, creating multiple sizes of the same image.
+
+\begin{center}
+	\includegraphics[width=0.5\linewidth]{lectures/04-a/images/non-max-supp.png}
+\end{center}
+
+After this sub-sampling, each kernel goes over each image, generating multiple feature maps.
+If there is a partial match in one of the higher resolution images, there is a good chance that there is a perfect match in one of the lower resolution images.
+By suppressing all of the non-maximal matches, you can find the right bounding box for an object.
+It also allows one kernel to detect the same feature while being size-invariant.
+
+\section{Semantic Segmentation}
+% Authors: Doruk Kilitcioglu, Pedro Manuel Herrero Vidal, Yves Greatti
+% Lecture date: 2/25/2019
+Semantic segmentation looks at the problem of identifying where exactly each object begins and end.
+This gives higher fidelity information when compared to using bounding boxes.
+Examples include medical imaging for detecting tumors (where you would want to isolate different tumors), and DARPA's LAGR program.
+
+\begin{center}
+	\includegraphics[width=0.8\linewidth]{lectures/04-a/images/semantic-segmentation.png}
+\end{center}
+
+One way of training these networks is to hand-label each and every pixel with the desired output.
+
+For self-driving vehicles, DARPA's LAGR program used stereo vision, or stereo depth estimation, in order to estimate the relative depth of objects.
+Since there is a maximum range you can estimate using stereo vision, LAGR used convolutional nets to estimate longer range depth.
+It again used the idea of subsampling to bring down the image to multiple different resolutions before doing the convolution.
+This made the convolutional nets more robust (compared to stereo vision) for objects that were near or very far.
